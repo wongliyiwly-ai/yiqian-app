@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>意签 Yiqian</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── 签文数据 (30 Lots) ───────────────────────────────────────────────────────
+const LOTS = [
+  {
+    id: 1, number: "第一签", name: "春雷初动", nameEn: "First Thunder of Spring",
+    verse: "冬藏已久一声雷，万物潜芽待雨催。莫问何时春色至，根深方能叶自回。",
+    verseEn: "Long-sleeping seeds await the thunder's call; roots that grow deep need not fear at all.",
+    meaning: "你现在经历的沉寂，不是被遗忘，而是在积蓄力量。就像大地在冬天储存生机，等待最合适的时机才破土而出。不要因为暂时看不见成果就放弃，你正在成长，只是还没到开花的季节。",
+    meaningEn: "The stillness you feel now is not absence — it is accumulation. Like seeds beneath frozen ground, your potential is building quietly. Do not abandon growth simply because you cannot yet see its bloom.",
+    reminder: "深根者，不惧风摇。",
+    reminderEn: "Those with deep roots do not fear the wind.",
+    theme: "等待时机"
+  },
+  {
+    id: 2, number: "第二签", name: "云开月明", nameEn: "Clouds Part, Moon Shines",
+    verse: "山重水复疑无路，云开月明自有时。心若不乱静如水，万事终将各归位。",
+    verseEn: "When paths seem lost and roads unclear, the moon emerges — steady, near.",
+    meaning: "当你觉得被困住、看不见出路的时候，往往是因为你站得太近了。退一步，让心平静下来，你会发现事情本来没有那么复杂。云雾终会散去，月亮一直都在。",
+    meaningEn: "When you feel trapped, you may simply be standing too close. Step back, let the mind settle, and clarity will return — the moon was always there, just briefly hidden.",
+    reminder: "心静，则路自现。",
+    reminderEn: "A calm mind reveals the way forward.",
+    theme: "迷茫"
+  },
+  {
+    id: 3, number: "第三签", name: "竹韵清风", nameEn: "Bamboo and Clear Breeze",
+    verse: "竹本无心却有节，随风起舞不折腰。世间纷扰皆过客，清风明月自逍遥。",
+    verseEn: "Bamboo bends with wind yet never breaks; the wise one bends, not for others' sake.",
+    meaning: "弹性不是软弱，是一种智慧。你可以适应环境、接受变化，同时保持内心的节气和底线。不必在每一场争论中赢得对方，有时候，保持自己的清醒就已经足够。",
+    meaningEn: "Flexibility is not weakness — it is wisdom. You may bend with circumstances while keeping your inner integrity. Not every conflict needs to be won; sometimes, remaining clear within is enough.",
+    reminder: "弯而不断，方为韧性。",
+    reminderEn: "To bend without breaking is true resilience.",
+    theme: "人际关系"
+  },
+  {
+    id: 4, number: "第四签", name: "水镜无尘", nameEn: "Still Water, Clear Mirror",
+    verse: "水静自能照万物，尘心若静见真我。莫因他言乱本性，镜明方照真山河。",
+    verseEn: "Still water mirrors heaven clear; only a quiet heart sees what is real here.",
+    meaning: "最近你可能受到了太多外部声音的影响，不知道该相信谁，也不知道该往哪里走。试着暂时放下别人的看法，回到自己最内心的感受。你的答案，从来都在你自己这里。",
+    meaningEn: "You may be swayed by too many voices right now. Try setting aside what others say and return to your own inner knowing. Your truest answers have always lived within you.",
+    reminder: "别人的路，走不出你自己的人生。",
+    reminderEn: "Another's path cannot become your own journey.",
+    theme: "自我成长"
+  },
+  {
+    id: 5, number: "第五签", name: "落叶归根", nameEn: "Fallen Leaf Returns to Root",
+    verse: "秋风送叶千里路，归根终是本来处。漂泊不过一场梦，归心似箭向故土。",
+    verseEn: "Though leaves travel far on autumn wind, they know the root they must return to find.",
+    meaning: "你现在可能离自己最真实的状态有些远了。也许是太忙、太累、太迎合别人，忘了自己真正想要的是什么。这支签提醒你：找一段时间，好好回到自己。不是逃避，而是归位。",
+    meaningEn: "You may have drifted from your truest self — perhaps from exhaustion, busyness, or accommodating others too long. This is a gentle invitation to return. Not escape, but realignment.",
+    reminder: "走得再远，也要记得回家的路。",
+    reminderEn: "No matter how far you wander, remember the way back to yourself.",
+    theme: "自我成长"
+  },
+  {
+    id: 6, number: "第六签", name: "松柏长青", nameEn: "Pine and Cypress, Ever Green",
+    verse: "严冬霜雪不改色，松柏傲立自长青。非是无情经风雪，有根有魂乃从容。",
+    verseEn: "Through frost and snow the pine stands green — roots and soul make one serene.",
+    meaning: "你正在经历一段艰难的时期，但这段经历不会打倒你，反而会让你更坚定。挫折不是惩罚，是淬炼。不要急着从困难中逃走，试着问自己：这件事能让我学到什么？",
+    meaningEn: "You are in a difficult season, but it is forging you, not defeating you. Adversity is not punishment — it is refinement. Rather than fleeing the challenge, ask: what is this teaching me?",
+    reminder: "最冷的冬天，往往是最靠近春天的时候。",
+    reminderEn: "The coldest winter is often the one closest to spring.",
+    theme: "工作"
+  },
+  {
+    id: 7, number: "第七签", name: "花开自时", nameEn: "Flowers Bloom in Their Own Time",
+    verse: "百花各有开落时，催之不得误花期。顺其自然随节令，春来自会花满枝。",
+    verseEn: "Each flower blooms according to its time; force and rush will only break the vine.",
+    meaning: "你现在的急迫感，很多时候来自于和别人比较。你觉得自己已经落后了。但每个人的花期不同，不需要在同一时间盛开。放下那份焦急，做好当下的准备，你的时机正在来。",
+    meaningEn: "Your urgency often comes from comparison. You feel behind. But every flower has its own season — not all bloom at the same time. Release that anxiety; your moment is quietly approaching.",
+    reminder: "你不是落后，只是节奏不同。",
+    reminderEn: "You are not behind; you simply bloom on a different schedule.",
+    theme: "焦虑"
+  },
+  {
+    id: 8, number: "第八签", name: "渡船已近", nameEn: "The Ferry Draws Near",
+    verse: "久望对岸心已急，渡船已在雾中行。莫因等待而疲倦，彼岸终将候你至。",
+    verseEn: "The shore seems far, the boat obscured by mist — have faith; it moves toward you in the midst.",
+    meaning: "你等待的那件事，并没有消失，只是还在路上。这段时间你能做的，不是焦虑地盯着对岸，而是把自己准备好，让自己值得到达那个彼岸。等待本身，也是成长的一部分。",
+    meaningEn: "What you await has not disappeared — it is simply still on its way. Rather than staring anxiously at the far shore, use this time to prepare yourself. Waiting, too, is part of growth.",
+    reminder: "准备好的人，机会来时不会错过。",
+    reminderEn: "Those who prepare well never miss their moment when it arrives.",
+    theme: "等待时机"
+  },
+  {
+    id: 9, number: "第九签", name: "心灯不灭", nameEn: "The Inner Light Never Dies",
+    verse: "千山暗夜独行路，心灯一盏照前途。莫信外境能灭火，自有光明在心处。",
+    verseEn: "Through a thousand darkened hills you walk — one light within guides every step.",
+    meaning: "你最近可能感到很孤独，好像没有人理解你，也不知道该依靠谁。但你自己内心有一份力量，是旁人拿不走的。试着相信自己的感知，那份直觉和坚持，是你一直以来最好的指引。",
+    meaningEn: "You may feel very alone right now, unseen and unsupported. But within you lives a light no one can extinguish. Trust your own perception and instincts — they have always been your truest guide.",
+    reminder: "你一个人，也可以照亮自己的路。",
+    reminderEn: "Even alone, you carry enough light to find your way.",
+    theme: "焦虑"
+  },
+  {
+    id: 10, number: "第十签", name: "一苇渡江", nameEn: "One Reed Crosses the River",
+    verse: "大江茫茫无桥路，一苇足可渡彼岸。非是外物有神力，心无挂碍自轻盈。",
+    verseEn: "No bridge spans the wide river's flow — yet a single reed, heart-light, can go.",
+    meaning: "你现在可能觉得自己准备不够、条件不足，但其实你已经有足够的资源去开始了。问题不在于你缺少什么，而是你太害怕出发。轻装上路，比什么都不带的人更有机会到达对岸。",
+    meaningEn: "You may feel under-equipped and under-prepared. But you already have enough to begin. The obstacle is not what you lack — it is the fear of starting. Set out lightly, and you will find the way.",
+    reminder: "不要等到完美才出发。",
+    reminderEn: "Do not wait for perfect conditions to begin.",
+    theme: "勇敢行动"
+  },
+  {
+    id: 11, number: "第十一签", name: "雨后彩虹", nameEn: "Rainbow After Rain",
+    verse: "乌云压城不见日，苦雨连绵心难舒。然而彩虹非凭空，必借风雨方能出。",
+    verseEn: "Without the rain no rainbow forms; beauty emerges only through storms.",
+    meaning: "你正在经历的痛苦，不是没有意义的。那些让你难受的经历，正在把你塑造成一个更有深度的人。不需要假装没事，允许自己难过，但也要知道：这一页终会翻过去。",
+    meaningEn: "The pain you carry is not meaningless. These experiences are shaping you into someone with greater depth. You need not pretend — allow the feeling. And know: this chapter will eventually turn.",
+    reminder: "风雨过后，你将不再是原来的你。",
+    reminderEn: "After the storm, you will not be who you were before.",
+    theme: "感情"
+  },
+  {
+    id: 12, number: "第十二签", name: "静水深流", nameEn: "Still Waters Run Deep",
+    verse: "急流奔涌声势壮，静水无声却深远。莫以喧哗论高下，厚积薄发自有时。",
+    verseEn: "Rushing waters roar but run shallow; still waters carry more than shows.",
+    meaning: "你不需要总是表现出来，让别人知道你有多努力、多优秀。真正的积累是安静的。现在比起向外展示，更重要的是向内深耕。别人看不见的地方，才是你真正成长的地方。",
+    meaningEn: "You do not need to always demonstrate your effort or worth. True accumulation is quiet. What matters now is not performing for others, but deepening inwardly. Growth that is unseen is often the most real.",
+    reminder: "深的东西，不需要大声说出来。",
+    reminderEn: "What is truly deep does not need to be loudly announced.",
+    theme: "自我成长"
+  },
+  {
+    id: 13, number: "第十三签", name: "空谷幽兰", nameEn: "Orchid in an Empty Valley",
+    verse: "幽兰不择无人处，自开自落香自远。非为赏识而吐芳，本性使然花自开。",
+    verseEn: "The orchid blooms though no eyes watch — its fragrance needs no audience.",
+    meaning: "你现在可能很在乎别人怎么看你，害怕付出没有回报，努力得不到认可。这支签在提醒你：做自己认为对的事，不需要掌声也能继续走下去。你的价值，不由他人的目光决定。",
+    meaningEn: "You may be caught in the need for recognition — fearing your efforts go unseen. This lot reminds you: do what you believe is right, without needing applause. Your worth is not determined by others' gaze.",
+    reminder: "为自己而开的花，最香。",
+    reminderEn: "The flower that blooms for itself carries the deepest fragrance.",
+    theme: "人际关系"
+  },
+  {
+    id: 14, number: "第十四签", name: "明月照古今", nameEn: "The Moon Illuminates All Ages",
+    verse: "古人今人共一月，悲欢离合皆有时。你所经历非独有，月下众生皆同路。",
+    verseEn: "One moon shines on all ages past — the joys and sorrows meant to last.",
+    meaning: "你现在经历的困难和迷茫，不是只有你一个人有。很多人，在不同的时代、不同的处境下，都曾经历同样的感受。你不孤单。人类共同分享着这些喜悦与悲伤，而大部分人都走过来了。",
+    meaningEn: "The confusion and hardship you feel now — you are not alone in it. Many people, across many ages and circumstances, have known this same ache. You are not isolated. Most have walked through it.",
+    reminder: "你不是第一个经历这些的人，也不会是最后一个。",
+    reminderEn: "You are neither the first nor the last to walk this road.",
+    theme: "迷茫"
+  },
+  {
+    id: 15, number: "第十五签", name: "放下千斤", nameEn: "Release a Thousand Weights",
+    verse: "执念如石压心间，放下方知身自轻。非是放弃非认输，而是智者知进退。",
+    verseEn: "Attachment is a stone upon the chest; release it, and you find you weigh far less.",
+    meaning: "有一件事你一直放不下，可能是一段感情、一个结果、一份期待。这支签不是叫你假装不在乎，而是提醒你：你已经为它付出了很多，现在可以允许自己不再那么用力抓紧。放手，是一种成全自己。",
+    meaningEn: "There is something you have been unable to release — a relationship, an outcome, an expectation. This lot does not ask you to pretend indifference. It invites you to loosen your grip. Letting go is an act of self-compassion.",
+    reminder: "放下，不是失去，而是腾出空间迎接新的。",
+    reminderEn: "Releasing is not losing — it is creating space for what comes next.",
+    theme: "放下执念"
+  },
+  {
+    id: 16, number: "第十六签", name: "种瓜得瓜", nameEn: "You Reap What You Sow",
+    verse: "春日播种秋日收，因果循环自有规。莫问何时见回报，先问今日种何种。",
+    verseEn: "Plant in spring, harvest in fall — what you send out returns to all.",
+    meaning: "与其担心结果，不如关注你今天做了什么。任何好的结果，都是一点一滴积累出来的。你现在种下的，无论是好习惯、善意、还是努力，未来都会以某种方式回到你身上。",
+    meaningEn: "Rather than worrying about outcomes, focus on what you are planting today. Every good result is built from small, consistent acts. The effort, kindness, and habits you sow now will return to you in time.",
+    reminder: "今天你做的事，就是你在给未来的自己写信。",
+    reminderEn: "What you do today is a letter you are writing to your future self.",
+    theme: "工作"
+  },
+  {
+    id: 17, number: "第十七签", name: "借风起航", nameEn: "Borrow the Wind to Sail",
+    verse: "孤帆待风不自乱，顺势而行路自宽。非是无力非无心，借力使力非懒散。",
+    verseEn: "The wise sail does not strain against the calm — it waits, then catches what wind gives.",
+    meaning: "现在可能不是强行推进的好时机，而是观察趋势、等待时机的时候。不是叫你放弃，而是叫你聪明地等待。当风向对的时候，一张帆就能走很远；逆风强行，只会累坏自己。",
+    meaningEn: "This may not be the time to push harder — it may be the time to observe, position, and wait. Not passivity, but intelligent patience. When the wind shifts in your favor, a single sail can carry you far.",
+    reminder: "时机比努力更需要智慧。",
+    reminderEn: "Recognizing the right moment requires more wisdom than effort alone.",
+    theme: "等待时机"
+  },
+  {
+    id: 18, number: "第十八签", name: "问心无愧", nameEn: "A Clear Conscience",
+    verse: "是非曲直自心知，无愧于心则无惧。他人评说随风去，静夜扪心自可知。",
+    verseEn: "Right and wrong live first within the heart — face your own stillness before all else.",
+    meaning: "你可能正在面对一些外界的误解或批评，觉得自己付出了却没有被看见，甚至被冤枉。最重要的不是争辩，而是先问自己：我做的，是我认为对的事吗？如果是，那就足够了。",
+    meaningEn: "You may be facing misunderstanding or unfair criticism. The most important question is not how to defend yourself, but to ask: have I acted with integrity? If yes, that is enough.",
+    reminder: "在最安静的夜里，和自己坦诚相对，才是真正的勇气。",
+    reminderEn: "In the quietest night, being honest with yourself — that is real courage.",
+    theme: "人际关系"
+  },
+  {
+    id: 19, number: "第十九签", name: "细水长流", nameEn: "Slow Waters Flow Long",
+    verse: "汹涌之水易断流，细水绵绵万古流。感情非得轰烈燃，平淡之中有深情。",
+    verseEn: "Torrent waters run dry; the gentle stream outlasts them all.",
+    meaning: "感情不一定要轰轰烈烈才算真实。真正持久的关系，往往建立在日常的体贴、耐心和理解上。不需要追求戏剧性，也不需要证明什么。平静地在一起，本身就是一件很美好的事。",
+    meaningEn: "Love does not have to be dramatic to be real. The most lasting bonds are built from daily kindness, patience, and understanding — not grand gestures. Being quietly present together is itself something beautiful.",
+    reminder: "越是真实的感情，越不需要证明。",
+    reminderEn: "The most genuine love requires no proof.",
+    theme: "感情"
+  },
+  {
+    id: 20, number: "第二十签", name: "破茧成蝶", nameEn: "Break the Cocoon, Become the Butterfly",
+    verse: "蛹中黑暗非终点，破茧之痛换新生。莫问蜕变需多久，只知此刻非彼时。",
+    verseEn: "The darkness inside the cocoon is not the end — the pain of becoming is the price of wings.",
+    meaning: "你正在经历的变化和不适，是成长的必要过程。就像蝴蝶在破茧的那一刻，是它最痛苦也是最重要的时刻。不要急着逃离这种不舒适，因为正是这个过程，在把你变成更好的自己。",
+    meaningEn: "The discomfort and upheaval you feel is the necessary process of transformation. Like the butterfly at the moment of breaking free, this is your most difficult and most important passage. Do not flee it — it is making you new.",
+    reminder: "改变从来都不舒服，但改变之后你会感谢自己。",
+    reminderEn: "Change is never comfortable, but you will thank yourself for it.",
+    theme: "自我成长"
+  },
+  {
+    id: 21, number: "第二十一签", name: "顺流而行", nameEn: "Flow with the Current",
+    verse: "逆水行舟费力多，顺水而下自悠然。非是软弱从流去，识势者乃真英雄。",
+    verseEn: "The wise swimmer does not fight the river — they read it, and move with it.",
+    meaning: "你现在可能在某件事上使出了很大的力气，但收效甚微。也许是时候重新评估方向：这真的是我该走的路吗？还是我只是不肯承认走错了？有时候，转弯不是认输，而是智慧。",
+    meaningEn: "You may be expending great energy with little result. Perhaps it is time to re-examine direction: is this truly your path, or are you unwilling to admit a wrong turn? Sometimes changing course is not surrender — it is wisdom.",
+    reminder: "方向对了，风才是助力；方向错了，越努力越远。",
+    reminderEn: "With the right direction, every wind helps; wrong direction, effort only takes you further away.",
+    theme: "工作"
+  },
+  {
+    id: 22, number: "第二十二签", name: "一叶知秋", nameEn: "One Leaf Signals Autumn",
+    verse: "一叶落知天下秋，细微之处见全貌。莫因小事不留心，处处皆是人生学。",
+    verseEn: "One falling leaf reveals the season's truth — wisdom lives in small, quiet details.",
+    meaning: "你可能错过了一些重要的信号，因为你只盯着大事，忽略了细节。生活中很多重要的答案，往往隐藏在那些「小事」里：一个人对待服务员的方式，一段对话中的一个停顿。留心观察，你会发现更多。",
+    meaningEn: "You may have missed important signals by focusing on big things while overlooking details. Many of life's most important answers hide in small moments — how someone treats a stranger, a pause in conversation. Observe carefully.",
+    reminder: "细心的人，往往活得更清醒。",
+    reminderEn: "Those who pay attention tend to live more clearly.",
+    theme: "人际关系"
+  },
+  {
+    id: 23, number: "第二十三签", name: "守得云开", nameEn: "Wait for the Clouds to Part",
+    verse: "乌云蔽日不长久，守得云开见日暖。非是老天偏心汝，时机未到须静候。",
+    verseEn: "Dark clouds do not last — the patient heart is rewarded with warmth.",
+    meaning: "你正在经历一段低潮期，感觉什么都不顺，什么都看不见希望。这个时期是真实存在的，不需要否认它。但低潮期有一个特点，就是它一定会过去。你要做的，只是撑过这一段。",
+    meaningEn: "You are in a low period — nothing seems right and hope feels distant. This is real, and you need not deny it. But low periods share one quality: they always pass. Your task now is simply to endure this stretch.",
+    reminder: "你只需要撑到天亮，黑夜就结束了。",
+    reminderEn: "Hold on until dawn — the night ends on its own.",
+    theme: "焦虑"
+  },
+  {
+    id: 24, number: "第二十四签", name: "知足常乐", nameEn: "Contentment Brings Joy",
+    verse: "欲壑难填苦自生，知足者乐无须争。非是叫人不上进，是叫人先识心中足。",
+    verseEn: "Unending desire feeds its own pain; to know enough is to live in ease.",
+    meaning: "你最近是否一直在追求更多，却总觉得还不够？这支签不是叫你停止进步，而是提醒你：在追求的同时，也要看见自己已经拥有的。学会欣赏现在的自己，才能健康地迈向未来。",
+    meaningEn: "Have you been endlessly chasing more, yet always feeling not enough? This lot does not ask you to stop growing — it invites you to also see what you already have. Appreciating the present self is the foundation of a healthy future.",
+    reminder: "停下来数一数你拥有的，你会发现自己已经很富有了。",
+    reminderEn: "Pause and count what you have — you may find you are already quite rich.",
+    theme: "金钱压力"
+  },
+  {
+    id: 25, number: "第二十五签", name: "山高路远", nameEn: "High Mountain, Long Road",
+    verse: "望山觉高脚未动，行则知路在脚下。千里之路始足下，莫待完备再出发。",
+    verseEn: "The mountain looks high from where you stand — take one step; the path reveals itself.",
+    meaning: "你设定的目标看起来很遥远，让你不知道从哪里开始，甚至不敢开始。但所有远大的目标，都是被分解成一件件小事完成的。你不需要马上知道所有步骤，只需要知道今天可以做的那一步。",
+    meaningEn: "Your goal feels distant and overwhelming, and you hesitate to begin. But every large destination is reached through small steps. You do not need to see the whole road — only today's step.",
+    reminder: "今天多走一步，就是在靠近。",
+    reminderEn: "One step today is one step closer.",
+    theme: "学业"
+  },
+  {
+    id: 26, number: "第二十六签", name: "家和万事兴", nameEn: "Peace at Home, Prosperity in All",
+    verse: "家人相聚非一易，和气生财非虚言。莫让外事扰家宁，家是心之最终处。",
+    verseEn: "A peaceful home is the root of all flourishing — tend it with care.",
+    meaning: "最近家庭关系可能需要你多用一些心。也许是一段沉默，一个误解，或者是大家都太忙了忘了彼此关心。你不需要解决所有问题，但可以先做一个小动作：主动说一句关心的话，往往就能打开一扇门。",
+    meaningEn: "Family relationships may need a little more of your attention now. A silence, a misunderstanding, or simply being too busy for each other. You need not solve everything — one small gesture of care can often open a door.",
+    reminder: "家人之间，一句关心往往比千言万语更有力量。",
+    reminderEn: "Between family, one caring word often carries more than a thousand explanations.",
+    theme: "家庭"
+  },
+  {
+    id: 27, number: "第二十七签", name: "宁静致远", nameEn: "Serenity Leads to Distance",
+    verse: "非淡泊无以明志，非宁静无以致远。喧嚣世界觅清静，先从内心觅安宁。",
+    verseEn: "Without stillness, the far horizon remains unseen — seek quiet within before without.",
+    meaning: "你最近的状态可能太嘈杂了：手机、信息、焦虑、别人的期待。这支签提醒你：给自己一段真正安静的时间，不要看手机、不要思考问题，只是让自己存在着。那种安静，会带来你需要的清晰。",
+    meaningEn: "Your inner state may be too noisy right now — notifications, anxiety, others' expectations. This lot invites you to find a period of genuine quiet: no phone, no problem-solving, simply existing. That silence will bring the clarity you need.",
+    reminder: "每天十分钟的安静，比十小时的思考更有效。",
+    reminderEn: "Ten minutes of genuine silence often yields more than ten hours of thinking.",
+    theme: "内心平静"
+  },
+  {
+    id: 28, number: "第二十八签", name: "因缘自在", nameEn: "Let Fate Unfold Freely",
+    verse: "强求之事多不成，随缘而至自然成。非是消极不作为，是顺天意尽人事。",
+    verseEn: "What is forced rarely flourishes; what is allowed often does.",
+    meaning: "有一件事你一直想要控制结果，但越控制越焦虑。缘分这件事，有它自己的节奏。你能做的，是尽力而为，然后放开对结果的执着。该来的会来，不来的拿不住；这不是悲观，这是一种成熟的宽容。",
+    meaningEn: "There is something you have been trying to control, and the effort is exhausting you. What is meant to unfold has its own rhythm. Do your best, then release your grip on the outcome. This is not pessimism — it is a mature and gracious acceptance.",
+    reminder: "尽力之后，交给时间。",
+    reminderEn: "After doing your best, surrender the rest to time.",
+    theme: "感情"
+  },
+  {
+    id: 29, number: "第二十九签", name: "厚积薄发", nameEn: "Deep Accumulation, Sudden Release",
+    verse: "积土成山非一日，积水成渊需岁月。厚积之后发一言，重于千金人信服。",
+    verseEn: "Mountains form grain by grain, rivers deepen year by year — then, in one moment, everything.",
+    meaning: "你现在的努力可能还没有看到成果，甚至有人质疑你是不是在浪费时间。但请相信积累的力量：真正的爆发，都是在长时间沉默之后发生的。你现在做的每一件小事，都在为那个时刻作准备。",
+    meaningEn: "Your effort may not yet show results, and you may face doubt — including your own. Trust in accumulation. True breakthroughs almost always follow long periods of invisible work. Everything you are doing now is preparing the ground.",
+    reminder: "沉默不是停止，而是在蓄力。",
+    reminderEn: "Silence is not stagnation — it is the gathering of force.",
+    theme: "学业"
+  },
+  {
+    id: 30, number: "第三十签", name: "天下归心", nameEn: "All Paths Lead Within",
+    verse: "外求万物终不足，内求一念足以安。世间繁华皆过客，心安之处是故乡。",
+    verseEn: "Seeking outward finds no end; looking inward finds enough.",
+    meaning: "你一直在向外寻找：找认可、找方向、找安全感、找幸福。这支签在告诉你：你寻找的很多东西，其实都在你自己身上。不是叫你封闭自己，而是先回到内心，找到那个属于你的平静，再出发。",
+    meaningEn: "You have been searching outward — for approval, direction, security, happiness. This lot gently tells you: much of what you seek already lives within you. Return inward first. Find your own quiet center. Then step back into the world.",
+    reminder: "心安，才是真正的到家。",
+    reminderEn: "Peace of mind — that is the only true homecoming.",
+    theme: "内心平静"
+  }
+];
+
+// ─── Mock AI Responses ────────────────────────────────────────────────────────
+const AI_SYSTEM_PROMPT = `你是「意签 AI」，一位温柔、理性、有东方哲理感的 AI 陪伴者。
+你会用佛系、道系、禅意的方式，引导用户思考问题，但绝不迷信预测，也不制造焦虑。
+
+请严格按照以下格式回答，每个部分之间空一行：
+
+💬 你的感受
+用1-2句话温柔回应用户情绪，让他们感到被理解。
+
+🌿 一句哲理
+引用一句道家、佛学或禅意智慧，并用一句话解释它的意思。
+
+🔍 帮你看清楚
+用简单直白的话，帮用户看清问题本质。3句内说完。
+
+✅ 今天可以做的一件事
+给一个具体、可执行的小行动建议。要实际，不要空泛。
+
+✨ 今日提醒：
+以一句简洁有力的话作结尾。
+
+禁止说"你一定会怎样"、"肯定会成功"之类的绝对预测。语气温柔，不说教，不吓人。
+整体回答不超过300字。`;
+
+// ─── Translations ─────────────────────────────────────────────────────────────
+const T = {
+  zh: {
+    appName: "意签",
+    tagline: "一签一念，照见当下",
+    intro: "意签不是预测未来，而是陪你在迷茫时，看清自己的心。",
+    startDraw: "开始抽签",
+    chatWithAI: "与意签 AI 对话",
+    about: "关于意签",
+    home: "首页",
+    draw: "抽签",
+    chat: "对话",
+    drawTitle: "专注当下，摇动签筒",
+    drawSub: "深呼吸，心中默想你的困惑，然后摇动签筒。",
+    shake: "摇签",
+    shaking: "诚心所求…",
+    redraw: "重新抽签",
+    askAI: "请意签 AI 解读",
+    lotNumber: "签号",
+    lotName: "签名",
+    verseTitle: "签文",
+    meaningTitle: "解释",
+    reminderTitle: "今日提醒",
+    chatTitle: "意签 AI",
+    chatSub: "有什么困惑，都可以说出来。",
+    chatPlaceholder: "说说你的困惑，或者把刚才的签文发给我…",
+    send: "发送",
+    aiThinking: "意签在思考…",
+    disclaimer: "意签提供的是哲理启发与情绪陪伴，不构成宗教指引、心理治疗、财务建议、法律建议或未来预测。请理性参考，重要决定仍需结合现实情况判断。",
+    aboutTitle: "关于意签",
+    aboutText: "意签是一个以东方哲理为核心的现代 AI 陪伴工具。「意」代表心意与意义，「签」代表启示与提醒。\n\n我们相信，每一个人内心深处都有自己的答案。意签只是一面镜子，帮你在迷茫时，照见自己真实的心。\n\n意签不算命、不预测、不恐吓。它只是轻轻地问你：此刻，你的心在哪里？",
+    suggestedQuestions: ["我最近很焦虑，不知道未来怎么办", "我感情不顺，不知道该不该继续", "我工作压力很大，感觉快撑不住了", "我不知道这支签是什么意思"],
+    lotResultTitle: "你的签"
+  },
+  en: {
+    appName: "Yiqian",
+    tagline: "One draw. One reflection.",
+    intro: "Yiqian is not about predicting the future — it helps you see your own heart more clearly in moments of uncertainty.",
+    startDraw: "Draw a Lot",
+    chatWithAI: "Talk to Yiqian AI",
+    about: "About",
+    home: "Home",
+    draw: "Draw",
+    chat: "Chat",
+    drawTitle: "Focus on the present — shake the container",
+    drawSub: "Breathe deeply, hold your question in mind, then shake.",
+    shake: "Shake",
+    shaking: "With sincerity…",
+    redraw: "Draw Again",
+    askAI: "Ask Yiqian AI to Interpret",
+    lotNumber: "Lot Number",
+    lotName: "Name",
+    verseTitle: "Verse",
+    meaningTitle: "Meaning",
+    reminderTitle: "Today's Reminder",
+    chatTitle: "Yiqian AI",
+    chatSub: "Share whatever is on your mind.",
+    chatPlaceholder: "Share your uncertainty, or paste the lot you just drew…",
+    send: "Send",
+    aiThinking: "Yiqian is reflecting…",
+    disclaimer: "Yiqian provides philosophical reflection and emotional companionship. It does not offer religious authority, therapy, financial advice, legal advice, or future prediction. Please use it as a reflective tool, not as a final decision-maker.",
+    aboutTitle: "About Yiqian",
+    aboutText: "Yiqian is a modern AI companion rooted in Eastern philosophy. 'Yi' means intention and meaning; 'Qian' means a drawn lot — a prompt, a signal, a reminder.\n\nWe believe every person already carries their own answers within. Yiqian is simply a mirror — helping you see your own heart more clearly in moments of uncertainty.\n\nYiqian does not predict, prescribe, or frighten. It only gently asks: right now, where is your heart?",
+    suggestedQuestions: ["I've been anxious and don't know what to do", "My relationship isn't going well", "Work pressure is overwhelming me", "I'm not sure what my lot means"],
+    lotResultTitle: "Your Lot"
+  }
+};
+
+// ─── Ink Blob SVG Component ───────────────────────────────────────────────────
+function InkBlob({ className = "" }) {
+  return (
+    <svg viewBox="0 0 200 200" className={className} aria-hidden="true">
+      <path fill="currentColor" d="M47.3,-57.2C60.9,-47.3,71.2,-32.8,74.8,-16.5C78.4,-0.2,75.3,17.9,66.6,32.5C57.9,47.1,43.6,58.1,27.8,64.7C12,71.3,-5.3,73.4,-21.5,69.2C-37.7,65,-52.9,54.4,-62.7,40C-72.5,25.6,-76.9,7.4,-74.2,-9.9C-71.5,-27.2,-61.7,-43.6,-48,-53.3C-34.3,-63,-17.2,-66,-0.4,-65.6C16.4,-65.1,33.7,-67.1,47.3,-57.2Z" transform="translate(100 100)" />
+    </svg>
+  );
+}
+
+// ─── Lotus SVG ────────────────────────────────────────────────────────────────
+function LotusIcon({ size = 24 }) {
+  const fontSize = size * 0.62;
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: size,
+        height: size,
+        fontSize: fontSize,
+        fontFamily: "'Noto Serif SC', serif",
+        fontWeight: 600,
+        color: "inherit",
+        lineHeight: 1,
+        letterSpacing: 0,
+        userSelect: "none",
+      }}
+    >
+      意
+    </span>
+  );
+}
+
+// ─── Particle Background ──────────────────────────────────────────────────────
+function FloatingParticles() {
+  const particles = Array.from({ length: 12 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 3 + 1,
+    duration: Math.random() * 20 + 15,
+    delay: Math.random() * -20,
+  }));
+
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      {particles.map(p => (
+        <div
+          key={p.id}
+          className="absolute rounded-full opacity-20"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: p.size,
+            height: p.size,
+            background: '#8B7355',
+            animation: `float-up ${p.duration}s ${p.delay}s infinite linear`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Shake Animation Component ────────────────────────────────────────────────
+function LotContainer({ onDraw, isShaking, lang, t }) {
+  return (
+    <div className="flex flex-col items-center gap-6">
+      <div
+        className={`relative cursor-pointer select-none ${isShaking ? 'animate-shake' : 'hover:scale-105 transition-transform duration-300'}`}
+        onClick={!isShaking ? onDraw : undefined}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === 'Enter' && !isShaking && onDraw()}
+        aria-label={t.shake}
+      >
+        {/* Bamboo container */}
+        <div className="relative w-20 h-36 mx-auto">
+          <div className="absolute inset-0 rounded-b-full" style={{
+            background: 'linear-gradient(180deg, #C8A96E 0%, #A08040 50%, #7A5C20 100%)',
+            boxShadow: '4px 4px 20px rgba(0,0,0,0.3), inset -3px 0 8px rgba(0,0,0,0.2)'
+          }} />
+          {/* Bamboo joints */}
+          {[30, 60, 90].map(y => (
+            <div key={y} className="absolute left-0 right-0 h-0.5" style={{ top: y, background: 'rgba(0,0,0,0.2)' }} />
+          ))}
+          {/* Sticks peeking out */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 flex gap-1">
+            {[0, 1, 2, 3, 4].map(i => (
+              <div key={i} className="w-0.5 rounded-t-full" style={{
+                height: 20 + i * 4,
+                background: '#8B6914',
+                marginTop: -12 + (i % 2) * 4,
+                transform: `rotate(${(i - 2) * 8}deg)`,
+                transformOrigin: 'bottom center'
+              }} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className="text-sm opacity-60 tracking-widest" style={{ color: '#5C4A2A', fontFamily: "'Noto Serif SC', serif" }}>
+        {isShaking ? t.shaking : t.shake}
+      </p>
+    </div>
+  );
+}
+
+// ─── Result Card ──────────────────────────────────────────────────────────────
+function ResultCard({ lot, lang, t, onAskAI, onRedraw }) {
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setRevealed(true), 100);
+  }, [lot]);
+
+  return (
+    <div className={`transition-all duration-700 ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className="relative rounded-2xl overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #FEFAF3 0%, #F5EDD8 100%)',
+        boxShadow: '0 20px 60px rgba(90,60,20,0.15)',
+        border: '1px solid rgba(160,120,60,0.2)'
+      }}>
+        {/* Top accent */}
+        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #C8A96E, #8B6914, #C8A96E)' }} />
+
+        <div className="p-6 md:p-8">
+          {/* Lot number + name */}
+          <div className="text-center mb-6">
+            <p className="text-xs tracking-[0.3em] mb-1 opacity-50" style={{ color: '#5C4A2A', fontFamily: "'Noto Serif SC', serif" }}>
+              {lang === 'zh' ? lot.number : `Lot ${lot.id}`}
+            </p>
+            <h2 className="text-2xl md:text-3xl font-semibold" style={{ color: '#2C1810', fontFamily: "'Noto Serif SC', serif" }}>
+              {lang === 'zh' ? lot.name : lot.nameEn}
+            </h2>
+          </div>
+
+          {/* Divider with lotus */}
+          <div className="flex items-center gap-3 my-4 opacity-30">
+            <div className="flex-1 h-px" style={{ background: '#8B6914' }} />
+            <LotusIcon size={16} />
+            <div className="flex-1 h-px" style={{ background: '#8B6914' }} />
+          </div>
+
+          {/* Verse */}
+          <div className="text-center my-6 px-4">
+            <p className="text-sm md:text-base leading-relaxed italic opacity-80" style={{
+              color: '#2C1810',
+              fontFamily: lang === 'zh' ? "'Noto Serif SC', serif" : "'IM Fell English', serif"
+            }}>
+              {lang === 'zh' ? lot.verse : lot.verseEn}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 my-4 opacity-30">
+            <div className="flex-1 h-px" style={{ background: '#8B6914' }} />
+            <div className="w-1 h-1 rounded-full" style={{ background: '#8B6914' }} />
+            <div className="flex-1 h-px" style={{ background: '#8B6914' }} />
+          </div>
+
+          {/* Meaning */}
+          <div className="mb-5">
+            <p className="text-xs tracking-widest mb-2 opacity-50" style={{ color: '#5C4A2A', fontFamily: "'Noto Serif SC', serif" }}>
+              — {t.meaningTitle} —
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: '#3C2A15', fontFamily: lang === 'zh' ? "'Noto Serif SC', serif" : "'Crimson Pro', serif", fontSize: '0.95rem' }}>
+              {lang === 'zh' ? lot.meaning : lot.meaningEn}
+            </p>
+          </div>
+
+          {/* Reminder */}
+          <div className="rounded-xl p-4 text-center" style={{ background: 'rgba(160,120,60,0.1)', border: '1px solid rgba(160,120,60,0.2)' }}>
+            <p className="text-xs tracking-widest mb-1 opacity-50" style={{ color: '#5C4A2A', fontFamily: "'Noto Serif SC', serif" }}>
+              {t.reminderTitle}
+            </p>
+            <p className="text-sm font-medium" style={{ color: '#6B4A1A', fontFamily: "'Noto Serif SC', serif" }}>
+              {lang === 'zh' ? lot.reminder : lot.reminderEn}
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom actions */}
+        <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={onAskAI}
+            className="flex-1 py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:opacity-90 hover:scale-[1.01]"
+            style={{ background: 'linear-gradient(135deg, #8B6914, #6B4A0A)', color: '#FDF5E0', fontFamily: "'Noto Serif SC', serif" }}
+          >
+            {t.askAI}
+          </button>
+          <button
+            onClick={onRedraw}
+            className="flex-1 py-3 rounded-xl text-sm transition-all duration-200 hover:opacity-80"
+            style={{ background: 'transparent', color: '#8B6914', border: '1px solid rgba(139,105,20,0.4)', fontFamily: "'Noto Serif SC', serif" }}
+          >
+            {t.redraw}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── AI Chat ──────────────────────────────────────────────────────────────────
+function ChatPage({ lang, t, initialMessage }) {
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      content: lang === 'zh'
+        ? '你好，我是意签 AI。无论你有什么困惑，都可以跟我说。我会用我的方式，陪你思考一下。'
+        : 'Hello, I am Yiqian AI. Whatever is on your mind, you can share it with me. I will walk through it with you.'
+    }
+  ]);
+  const [input, setInput] = useState(initialMessage || '');
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  useEffect(() => {
+    if (initialMessage) {
+      setInput(initialMessage);
+    }
+  }, [initialMessage]);
+
+  const callClaude = useCallback(async (userMessage) => {
+    setLoading(true);
+    const history = messages.map(m => ({ role: m.role, content: m.content }));
+    history.push({ role: 'user', content: userMessage });
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: AI_SYSTEM_PROMPT + (lang === 'en' ? `\n\nIMPORTANT: Reply in English only. Use the same structured format but with English section headers:\n💬 How You Feel\n🌿 A Word of Wisdom\n🔍 Seeing Clearly\n✅ One Thing You Can Do Today\n✨ Today's Reminder:` : ''),
+          messages: history
+        })
+      });
+      const data = await response.json();
+      const reply = data.content?.map(b => b.text || '').join('') || (lang === 'zh' ? '（意签暂时无法回应，请稍后再试。）' : '(Yiqian is momentarily unavailable. Please try again.)');
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: lang === 'zh' ? '暂时无法连接意签 AI，请稍后再试。' : 'Unable to connect to Yiqian AI right now. Please try again.'
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  }, [messages, lang]);
+
+  const handleSend = () => {
+    const trimmed = input.trim();
+    if (!trimmed || loading) return;
+    setMessages(prev => [...prev, { role: 'user', content: trimmed }]);
+    setInput('');
+    callClaude(trimmed);
+  };
+
+  return (
+    <div className="flex flex-col h-full" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4" style={{ minHeight: 0 }}>
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {msg.role === 'assistant' && (
+              <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1" style={{ background: 'linear-gradient(135deg, #C8A96E, #8B6914)' }}>
+                <LotusIcon size={14} />
+              </div>
+            )}
+            <div
+              className="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
+              style={{
+                background: msg.role === 'user' ? 'linear-gradient(135deg, #8B6914, #6B4A0A)' : 'rgba(255,248,235,0.9)',
+                color: msg.role === 'user' ? '#FDF5E0' : '#2C1810',
+                fontFamily: "'Noto Serif SC', serif",
+                boxShadow: '0 2px 12px rgba(90,60,20,0.1)',
+                border: msg.role === 'assistant' ? '1px solid rgba(160,120,60,0.15)' : 'none',
+                whiteSpace: 'pre-wrap'
+              }}
+            >
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #C8A96E, #8B6914)' }}>
+              <LotusIcon size={14} />
+            </div>
+            <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,248,235,0.9)', border: '1px solid rgba(160,120,60,0.15)' }}>
+              <div className="flex gap-1">
+                {[0, 1, 2].map(i => (
+                  <div key={i} className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#C8A96E', animationDelay: `${i * 0.15}s` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Suggested questions */}
+      {messages.length <= 1 && (
+        <div className="px-4 pb-2 flex flex-wrap gap-2">
+          {t.suggestedQuestions.map((q, i) => (
+            <button
+              key={i}
+              onClick={() => { setInput(q); inputRef.current?.focus(); }}
+              className="text-xs px-3 py-1.5 rounded-full transition-all duration-150 hover:opacity-80"
+              style={{ background: 'rgba(160,120,60,0.12)', color: '#6B4A1A', border: '1px solid rgba(160,120,60,0.2)', fontFamily: "'Noto Serif SC', serif" }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="px-4 pb-4 pt-2">
+        <div className="flex gap-2 rounded-2xl p-2" style={{ background: 'rgba(255,248,235,0.9)', border: '1px solid rgba(160,120,60,0.2)', boxShadow: '0 4px 20px rgba(90,60,20,0.08)' }}>
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            placeholder={t.chatPlaceholder}
+            rows={1}
+            className="flex-1 bg-transparent resize-none outline-none text-sm px-2 py-1"
+            style={{ color: '#2C1810', fontFamily: "'Noto Serif SC', serif", maxHeight: 80 }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || loading}
+            className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #8B6914, #6B4A0A)', color: '#FDF5E0', fontFamily: "'Noto Serif SC', serif" }}
+          >
+            {t.send}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+function App() {
+  const [lang, setLang] = useState('zh');
+  const [page, setPage] = useState('home');
+  const [isShaking, setIsShaking] = useState(false);
+  const [currentLot, setCurrentLot] = useState(null);
+  const [chatInitialMessage, setChatInitialMessage] = useState('');
+  const t = T[lang];
+
+  const handleDraw = () => {
+    if (isShaking) return;
+    setIsShaking(true);
+    setTimeout(() => {
+      const lot = LOTS[Math.floor(Math.random() * LOTS.length)];
+      setCurrentLot(lot);
+      setIsShaking(false);
+      setPage('result');
+    }, 1800);
+  };
+
+  const handleAskAI = () => {
+    if (currentLot) {
+      const msg = lang === 'zh'
+        ? `我刚抽到了「${currentLot.name}」这支签（${currentLot.number}），签文是：${currentLot.verse}\n\n请帮我解读这支签对我的意义。`
+        : `I just drew the lot "${currentLot.nameEn}". The verse is: "${currentLot.verseEn}". Could you help me understand what this means for me?`;
+      setChatInitialMessage(msg);
+      setPage('chat');
+    }
+  };
+
+  const navItems = [
+    { key: 'home', label: t.home },
+    { key: 'draw', label: t.draw },
+    { key: 'chat', label: t.chat },
+    { key: 'about', label: t.about },
+  ];
+
+  return (
+    <div className="min-h-screen" style={{
+      background: 'linear-gradient(160deg, #FBF5E8 0%, #F0E6CC 40%, #E8D9B8 100%)',
+      fontFamily: "'Noto Serif SC', serif"
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,400&family=IM+Fell+English:ital@0;1&display=swap');
+
+        @keyframes float-up {
+          from { transform: translateY(0) rotate(0deg); opacity: 0.2; }
+          50% { opacity: 0.15; }
+          to { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+
+        @keyframes shake {
+          0%, 100% { transform: rotate(0deg); }
+          10% { transform: rotate(-8deg) translateX(-3px); }
+          20% { transform: rotate(10deg) translateX(3px); }
+          30% { transform: rotate(-10deg) translateX(-3px); }
+          40% { transform: rotate(12deg) translateX(3px); }
+          50% { transform: rotate(-8deg) translateX(-2px); }
+          60% { transform: rotate(8deg) translateX(2px); }
+          70% { transform: rotate(-5deg) translateX(-1px); }
+          80% { transform: rotate(5deg) translateX(1px); }
+          90% { transform: rotate(-2deg); }
+        }
+
+        @keyframes fade-in-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes ink-spread {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 0.06; transform: scale(1); }
+        }
+
+        .animate-shake { animation: shake 0.5s ease-in-out infinite; }
+        .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
+        .ink-bg { animation: ink-spread 1.5s ease-out forwards; }
+      `}</style>
+
+      <FloatingParticles />
+
+      {/* Ink wash background decoration */}
+      <div className="fixed pointer-events-none" style={{ top: '10%', right: '-5%', width: '40vw', height: '40vw', opacity: 0 }} aria-hidden="true">
+        <InkBlob className="w-full h-full ink-bg text-amber-900" />
+      </div>
+      <div className="fixed pointer-events-none" style={{ bottom: '5%', left: '-10%', width: '35vw', height: '35vw', opacity: 0, animationDelay: '0.5s' }} aria-hidden="true">
+        <InkBlob className="w-full h-full ink-bg text-amber-800" />
+      </div>
+
+      {/* Header */}
+      <header className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(251,245,232,0.85)', borderBottom: '1px solid rgba(160,120,60,0.12)' }}>
+        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+          <button onClick={() => setPage('home')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #C8A96E, #8B6914)' }}>
+              <LotusIcon size={14} />
+            </div>
+            <span className="text-lg font-semibold tracking-wide" style={{ color: '#2C1810' }}>{t.appName}</span>
+          </button>
+          <div className="flex items-center gap-1">
+            {navItems.map(item => (
+              <button
+                key={item.key}
+                onClick={() => { setPage(item.key); if (item.key === 'draw') setCurrentLot(null); }}
+                className="px-3 py-1.5 rounded-lg text-xs transition-all duration-150"
+                style={{
+                  color: page === item.key || (item.key === 'draw' && page === 'result') ? '#6B4A1A' : '#8B7355',
+                  background: page === item.key || (item.key === 'draw' && page === 'result') ? 'rgba(160,120,60,0.12)' : 'transparent',
+                  fontFamily: "'Noto Serif SC', serif"
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+            <button
+              onClick={() => setLang(l => l === 'zh' ? 'en' : 'zh')}
+              className="ml-2 px-3 py-1.5 rounded-lg text-xs transition-all duration-150 hover:opacity-80"
+              style={{ background: 'rgba(160,120,60,0.15)', color: '#6B4A1A', border: '1px solid rgba(160,120,60,0.2)' }}
+            >
+              {lang === 'zh' ? 'EN' : '中'}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-2xl mx-auto px-4 py-8">
+
+        {/* HOME */}
+        {page === 'home' && (
+          <div className="animate-fade-in-up text-center">
+            <div className="mb-8 relative inline-block">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, #C8A96E 0%, #8B6914 100%)', boxShadow: '0 8px 32px rgba(139,105,20,0.3)' }}>
+                <LotusIcon size={36} />
+              </div>
+              <h1 className="text-5xl font-semibold mb-2" style={{ color: '#2C1810', letterSpacing: '0.15em' }}>
+                {t.appName}
+              </h1>
+              <p className="text-base tracking-[0.25em] opacity-60 mb-1" style={{ color: '#5C4A2A' }}>
+                {t.tagline}
+              </p>
+              {lang === 'en' && (
+                <p className="text-xs tracking-widest opacity-40" style={{ color: '#5C4A2A' }}>YIQIAN · 意签</p>
+              )}
+            </div>
+
+            <div className="relative my-10">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(139,105,20,0.3), transparent)' }} />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="px-4 text-xs opacity-40" style={{ background: 'transparent', color: '#5C4A2A' }}>✦</span>
+              </div>
+            </div>
+
+            <p className="text-base leading-relaxed mx-auto mb-12 max-w-sm opacity-75" style={{ color: '#3C2A15' }}>
+              {t.intro}
+            </p>
+
+            <div className="flex flex-col gap-3 max-w-xs mx-auto">
+              <button
+                onClick={() => { setPage('draw'); setCurrentLot(null); }}
+                className="py-4 rounded-2xl text-base font-medium tracking-wider transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                style={{
+                  background: 'linear-gradient(135deg, #A08040 0%, #6B4A0A 100%)',
+                  color: '#FDF5E0',
+                  boxShadow: '0 8px 24px rgba(107,74,10,0.25)'
+                }}
+              >
+                {t.startDraw}
+              </button>
+              <button
+                onClick={() => { setChatInitialMessage(''); setPage('chat'); }}
+                className="py-4 rounded-2xl text-base tracking-wider transition-all duration-200 hover:opacity-80"
+                style={{
+                  background: 'transparent',
+                  color: '#8B6914',
+                  border: '1.5px solid rgba(139,105,20,0.35)'
+                }}
+              >
+                {t.chatWithAI}
+              </button>
+            </div>
+
+            {/* Theme decoration */}
+            <div className="mt-16 flex justify-center gap-6 opacity-20">
+              {['○', '◇', '△', '◇', '○'].map((s, i) => (
+                <span key={i} className="text-sm" style={{ color: '#8B6914' }}>{s}</span>
+              ))}
+            </div>
+
+            {/* Disclaimer */}
+            <p className="mt-12 text-xs leading-relaxed opacity-30 max-w-sm mx-auto" style={{ color: '#5C4A2A' }}>
+              {t.disclaimer}
+            </p>
+          </div>
+        )}
+
+        {/* DRAW */}
+        {page === 'draw' && !currentLot && (
+          <div className="animate-fade-in-up text-center">
+            <h2 className="text-2xl font-semibold mb-2 tracking-wide" style={{ color: '#2C1810' }}>{t.drawTitle}</h2>
+            <p className="text-sm opacity-50 mb-12" style={{ color: '#5C4A2A' }}>{t.drawSub}</p>
+            <div className="py-8">
+              <LotContainer onDraw={handleDraw} isShaking={isShaking} lang={lang} t={t} />
+            </div>
+          </div>
+        )}
+
+        {/* RESULT */}
+        {page === 'result' && currentLot && (
+          <div className="animate-fade-in-up">
+            <p className="text-center text-sm tracking-widest mb-6 opacity-40" style={{ color: '#5C4A2A' }}>{t.lotResultTitle}</p>
+            <ResultCard lot={currentLot} lang={lang} t={t} onAskAI={handleAskAI} onRedraw={() => { setCurrentLot(null); setPage('draw'); }} />
+          </div>
+        )}
+
+        {/* CHAT */}
+        {page === 'chat' && (
+          <div className="animate-fade-in-up">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-semibold mb-1" style={{ color: '#2C1810' }}>{t.chatTitle}</h2>
+              <p className="text-sm opacity-50" style={{ color: '#5C4A2A' }}>{t.chatSub}</p>
+            </div>
+            <ChatPage lang={lang} t={t} initialMessage={chatInitialMessage} key={chatInitialMessage} />
+          </div>
+        )}
+
+        {/* ABOUT */}
+        {page === 'about' && (
+          <div className="animate-fade-in-up max-w-md mx-auto">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, #C8A96E, #8B6914)', boxShadow: '0 8px 24px rgba(139,105,20,0.25)' }}>
+                <LotusIcon size={28} />
+              </div>
+              <h2 className="text-2xl font-semibold tracking-widest" style={{ color: '#2C1810' }}>{t.aboutTitle}</h2>
+            </div>
+
+            <div className="rounded-2xl p-6 mb-6" style={{ background: 'rgba(255,248,235,0.7)', border: '1px solid rgba(160,120,60,0.15)', boxShadow: '0 8px 32px rgba(90,60,20,0.08)' }}>
+              <p className="text-sm leading-loose whitespace-pre-line" style={{ color: '#3C2A15' }}>
+                {t.aboutText}
+              </p>
+            </div>
+
+            <div className="rounded-2xl p-5" style={{ background: 'rgba(160,120,60,0.08)', border: '1px solid rgba(160,120,60,0.15)' }}>
+              <p className="text-xs leading-relaxed opacity-60" style={{ color: '#5C4A2A' }}>
+                {t.disclaimer}
+              </p>
+            </div>
+
+            {/* Lots count */}
+            <div className="mt-8 text-center">
+              <p className="text-xs opacity-30 tracking-widest" style={{ color: '#5C4A2A' }}>
+                {lang === 'zh' ? `收录签文 ${LOTS.length} 支` : `${LOTS.length} Original Lots`}
+              </p>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
