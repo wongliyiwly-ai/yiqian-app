@@ -646,19 +646,28 @@ function ChatPage({ lang, t, initialMessage }) {
     history.push({ role: 'user', content: userMessage });
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: AI_SYSTEM_PROMPT + (lang === 'en' ? `\n\nIMPORTANT: Reply in English only. Use the same structured format but with English section headers:\n💬 How You Feel\n🌿 A Word of Wisdom\n🔍 Seeing Clearly\n✅ One Thing You Can Do Today\n✨ Today's Reminder:` : ''),
-          messages: history
-        })
-      });
-      const data = await response.json();
-      const reply = data.content?.map(b => b.text || '').join('') || (lang === 'zh' ? '（意签暂时无法回应，请稍后再试。）' : '(Yiqian is momentarily unavailable. Please try again.)');
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+     const response = await fetch("/api/chat", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    lang,
+    messages: history
+  })
+});
+
+const data = await response.json();
+
+if (!response.ok) {
+  throw new Error(data.error || "API error");
+}
+
+const reply =
+  data.reply ||
+  (lang === "zh"
+    ? "（意签暂时无法回应，请稍后再试。）"
+    : "(Yiqian is momentarily unavailable. Please try again.)");
+
+setMessages(prev => [...prev, { role: "assistant", content: reply }]);
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
