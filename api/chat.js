@@ -41,6 +41,25 @@ IMPORTANT: Reply in English only. Use these English section headers:
 ✨ Today's Reminder:`
         : systemPrompt;
 
+    const cleanMessages = Array.isArray(messages)
+      ? messages
+          .filter(m => m && (m.role === "user" || m.role === "assistant") && m.content)
+          .map(m => ({
+            role: m.role,
+            content: String(m.content)
+          }))
+      : [];
+
+    while (cleanMessages.length > 0 && cleanMessages[0].role !== "user") {
+      cleanMessages.shift();
+    }
+
+    if (cleanMessages.length === 0) {
+      return res.status(400).json({
+        error: "No user message provided"
+      });
+    }
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -52,13 +71,14 @@ IMPORTANT: Reply in English only. Use these English section headers:
         model: "claude-3-5-sonnet-latest",
         max_tokens: 1000,
         system: finalSystemPrompt,
-        messages
+        messages: cleanMessages
       })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
+      console.error("Anthropic API error:", data);
       return res.status(response.status).json({
         error: data?.error?.message || "Claude API error"
       });
@@ -70,6 +90,7 @@ IMPORTANT: Reply in English only. Use these English section headers:
 
     return res.status(200).json({ reply });
   } catch (error) {
+    console.error("Server error:", error);
     return res.status(500).json({
       error: "Server error"
     });
