@@ -41,22 +41,47 @@ IMPORTANT: Reply in English only. Use these English section headers:
 ✨ Today's Reminder:`
         : systemPrompt;
 
-    const cleanMessages = Array.isArray(messages)
+    let cleanMessages = Array.isArray(messages)
       ? messages
-          .filter(m => m && (m.role === "user" || m.role === "assistant") && m.content)
-          .map(m => ({
+          .filter(
+            (m) =>
+              m &&
+              (m.role === "user" || m.role === "assistant") &&
+              m.content
+          )
+          .map((m) => ({
             role: m.role,
-            content: String(m.content)
+            content: String(m.content),
           }))
       : [];
+
+    cleanMessages = cleanMessages.filter((m) => {
+      return !(
+        m.role === "assistant" &&
+        (m.content.includes("你好，我是意签 AI") ||
+          m.content.includes("Hello, I am Yiqian AI"))
+      );
+    });
 
     while (cleanMessages.length > 0 && cleanMessages[0].role !== "user") {
       cleanMessages.shift();
     }
 
-    if (cleanMessages.length === 0) {
+    const mergedMessages = [];
+
+    for (const msg of cleanMessages) {
+      const last = mergedMessages[mergedMessages.length - 1];
+
+      if (last && last.role === msg.role) {
+        last.content += "\n\n" + msg.content;
+      } else {
+        mergedMessages.push(msg);
+      }
+    }
+
+    if (mergedMessages.length === 0) {
       return res.status(400).json({
-        error: "No user message provided"
+        error: "No user message provided",
       });
     }
 
@@ -65,34 +90,39 @@ IMPORTANT: Reply in English only. Use these English section headers:
       headers: {
         "Content-Type": "application/json",
         "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-latest",
-        max_tokens: 1000,
+        model: "claude-3-5-haiku-latest",
+        max_tokens: 800,
         system: finalSystemPrompt,
-        messages: cleanMessages
-      })
+        messages: mergedMessages,
+      }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Anthropic API error:", data);
+      console.error("Anthropic API error:", JSON.stringify(data, null, 2));
+
       return res.status(response.status).json({
-        error: data?.error?.message || "Claude API error"
+        error:
+          data?.error?.message ||
+          data?.message ||
+          "Claude API error. Please check API key, credits, or model.",
       });
     }
 
     const reply =
-      data.content?.map(block => block.text || "").join("") ||
+      data.content?.map((block) => block.text || "").join("") ||
       "暂时无法回应，请稍后再试。";
 
     return res.status(200).json({ reply });
   } catch (error) {
     console.error("Server error:", error);
+
     return res.status(500).json({
-      error: "Server error"
+      error: error.message || "Server error",
     });
   }
 }
